@@ -1,6 +1,6 @@
 tutorial to use the framework:
 
--ajouter le Winter.jar dans le lib 
+-ajouter le sprint.jar dans le lib 
 -creer web.xml
 -mapper un servlet comme suis 
 <servlet>
