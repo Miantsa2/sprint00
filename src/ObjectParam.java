@@ -1,10 +1,11 @@
 package mg.itu.prom16.annotations;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
 import java.lang.annotation.RetentionPolicy;
-@Target(ElementType.METHOD)
+import java.lang.annotation.Target;
+
 @Retention(RetentionPolicy.RUNTIME)
-public @interface GetMapping {
-    String url();
+@Target(ElementType.PARAMETER)
+public @interface ObjectParam {
+    String value();
 }

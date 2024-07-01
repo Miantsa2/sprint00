@@ -1,4 +1,4 @@
-package utils;
+package mg.itu.prom16.utils;
 
 public class Mapping {
     String className;
