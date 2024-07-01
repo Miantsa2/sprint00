@@ -3,7 +3,7 @@ set bin=bin
 set src=src\*.java
 set jarname=Sprint1
 
-set projectlib=E:\working dir\Sprint0deploy
+set projectlib=E:\working dir\test\lib
 
 javac -cp "%lib%\*"   -d    "%bin%"   %src%
 
