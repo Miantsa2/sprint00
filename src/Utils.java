@@ -18,6 +18,7 @@ import mg.itu.prom16.annotations.Controller;
 import mg.itu.prom16.annotations.GetMapping;
 import mg.itu.prom16.annotations.RequestParam;
 import utils.ModelView;
+import utils.MySession;
 
 public class Utils {
     boolean isController(Class<?> c) {
@@ -73,31 +74,30 @@ public class Utils {
         return res;
     }
 
-    public static Object[] getParameters(Method method,HttpServletRequest request,PrintWriter out) throws ServletException, Exception{
-
+    public static Object[] getParameters(Method method, HttpServletRequest request, PrintWriter out) throws ServletException, Exception {
         // Get parameter types and values from the request using annotations
         Parameter[] parameters = method.getParameters();
         Object[] parameterValues = new Object[parameters.length];
-    
+
         for (int i = 0; i < parameters.length; i++) {
             String paramName = "";
-            Annotation[] annotations =  parameters[i].getAnnotations();
-            if (annotations.length>0) {
-            for (Annotation annotation : annotations) {
-                if (annotation instanceof RequestParam) {
-                     paramName = ((RequestParam) annotation).value();
+            Annotation[] annotations = parameters[i].getAnnotations();
+            if (annotations.length > 0) {
+                for (Annotation annotation : annotations) {
+                    if (annotation instanceof RequestParam) {
+                        paramName = ((RequestParam) annotation).value();
+                    }
                 }
-            }
-            }else{
-                paramName=parameters[i].getName();
+            } else if(annotations.length == 0 && parameters[i].getType() != MySession.class) {
+                paramName = parameters[i].getName();
                 ModelView modelView = new ModelView();
                 modelView.setUrl("/erreur.jsp");
                 modelView.add("message", "ETU002557 SANS ANNOTATION");
-                parameterValues[0]=modelView;
+                parameterValues[0] = modelView;
                 return parameterValues;
-                
             }
-                if (parameters[i].getType() == String.class||
+
+            if (parameters[i].getType() == String.class ||
                 parameters[i].getType() == int.class ||
                 parameters[i].getType() == double.class) {
 
@@ -110,41 +110,38 @@ public class Utils {
                     parameterValues[i] = Double.parseDouble(paramValue);
                 }
 
-                } else {
+            } else if (parameters[i].getType() == MySession.class) {
+                parameterValues[i] = new MySession(request.getSession());
+            } else {
+                Class<?> laclasse = Class.forName(parameters[i].getType().getName());
+                Object newInstance = laclasse.getDeclaredConstructor().newInstance();
+                Field[] attributs = laclasse.getDeclaredFields();
+                Object[] attributsvalue = new Object[attributs.length];
 
-                    Class<?> laclasse=Class.forName(parameters[i].getType().getName());
-                    Object newInstance = laclasse.getDeclaredConstructor().newInstance();
-                    Field[] attributs=(laclasse).getDeclaredFields();
-                    Object[] attributsvalue=new Object[attributs.length];
+                for (int j = 0; j < attributs.length; j++) {
+                    attributs[j].setAccessible(true);
 
-                    for (int j=0 ; j<attributs.length ;j++) {
-                        attributs[j].setAccessible(true);
-                     
-                        out.println(paramName+"."+attributs[j].getName());
+                    out.println(paramName + "." + attributs[j].getName());
 
-                        String attvalue=request.getParameter(paramName+"."+attributs[j].getName());
-                        out.println(attvalue);
+                    String attvalue = request.getParameter(paramName + "." + attributs[j].getName());
+                    out.println(attvalue);
 
-                        
-                        if (attributs[j].getType() == String.class) {
-                            attributsvalue[j] = attvalue;
-                        } else if (attributs[j].getType() == int.class || attributs[j].getType() == Integer.class) {
-                            attributsvalue[j] = Integer.parseInt(attvalue);
-                        } else if (attributs[j].getType() == double.class || attributs[j].getType() == Double.class) {
-                            attributsvalue[j] = Double.parseDouble(attvalue);
-                        }
-                        else {
-                            throw new ServletException("l objet ne peut pas avoir d objet en tant que parametre");
-                        }
-                        attributs[j].set(newInstance, attributsvalue[j]);
+                    if (attributs[j].getType() == String.class) {
+                        attributsvalue[j] = attvalue;
+                    } else if (attributs[j].getType() == int.class || attributs[j].getType() == Integer.class) {
+                        attributsvalue[j] = Integer.parseInt(attvalue);
+                    } else if (attributs[j].getType() == double.class || attributs[j].getType() == Double.class) {
+                        attributsvalue[j] = Double.parseDouble(attvalue);
+                    } else {
+                        throw new ServletException("L'objet ne peut pas avoir d'objet en tant que paramètre");
                     }
-                    parameterValues[i] =newInstance;
-            
+                    attributs[j].set(newInstance, attributsvalue[j]);
                 }
+                parameterValues[i] = newInstance;
+            }
         }
         return parameterValues;
     }
-
     
     public static Object callMethod(String className,String methodName,String path,HttpServletRequest request,PrintWriter out) throws ServletException,Exception{
         Class<?> laclasse=Class.forName(className);
