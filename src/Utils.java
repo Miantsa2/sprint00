@@ -116,6 +116,12 @@ public class Utils {
                 Class<?> laclasse = Class.forName(parameters[i].getType().getName());
                 Object newInstance = laclasse.getDeclaredConstructor().newInstance();
                 Field[] attributs = laclasse.getDeclaredFields();
+                for (Field field : attributs) {
+                    if (field.getType().equals(MySession.class)) {
+                        field.setAccessible(true);
+                        field.set(newInstance,new MySession(request.getSession(true)));
+                    }
+                }
                 Object[] attributsvalue = new Object[attributs.length];
 
                 for (int j = 0; j < attributs.length; j++) {
@@ -132,7 +138,8 @@ public class Utils {
                         attributsvalue[j] = Integer.parseInt(attvalue);
                     } else if (attributs[j].getType() == double.class || attributs[j].getType() == Double.class) {
                         attributsvalue[j] = Double.parseDouble(attvalue);
-                    } else {
+                    } 
+                    else {
                         throw new ServletException("L'objet ne peut pas avoir d'objet en tant que paramètre");
                     }
                     attributs[j].set(newInstance, attributsvalue[j]);
