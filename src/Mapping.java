@@ -1,8 +1,9 @@
-package mg.itu.prom16.utils;
+package utils;
 
 public class Mapping {
     String className;
     String methodName;
+    
     public String getMethodName() {
         return methodName;
     }
