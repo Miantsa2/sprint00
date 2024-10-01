@@ -3,10 +3,14 @@ package utils;
 import jakarta.servlet.http.HttpSession;
 
 public class MySession {
-     HttpSession session;
+    private HttpSession session;
 
     public MySession(HttpSession session) {
         this.session = session;
+    }
+
+    public MySession() {
+        
     }
 
     public Object get(String key) {
@@ -19,5 +23,9 @@ public class MySession {
 
     public void delete(String key) {
         session.removeAttribute(key);
+    }
+
+    public void setSession(HttpSession session) {
+        this.session = session;
     }
 }
