@@ -1,11 +1,11 @@
-package mg.itu.prom16.annotations;
+package annotations;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-
-@Retention(RetentionPolicy.RUNTIME)
+import java.lang.annotation.RetentionPolicy;
 @Target(ElementType.PARAMETER)
+@Retention(RetentionPolicy.RUNTIME)
 public @interface ObjectParam {
-    String value();
+    String objName();
 }
