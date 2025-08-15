@@ -617,13 +617,7 @@ public class Utils {
                     throw new ResourceNotFound("Vous n'avez pas le role necessaire");
                 }
             }
-
-
-
-
-            
         }
-
     }
 
     //sprint16
@@ -756,7 +750,7 @@ public class Utils {
                 out.println("ressource");
 
                 response.sendError(HttpServletResponse.SC_NOT_FOUND, e.getMessage());
-            }
+            } 
 
 
 
