@@ -278,8 +278,65 @@ public class Utils {
     //     return parameterValues;
     // }
 
- 
+    //sprint 13
+    // public void validateField(Map<String, String[]> params, Field field, String key) throws Exception {
+    //     // Check if the field has a Numeric annotation
+    //     if (field.isAnnotationPresent(Numeric.class)) {
+    //         if (params.get(key) != null) {
+    //             try {
+    //                 Double.parseDouble(params.get(key)[0]);
+    //             } catch (Exception e) {
+    //                 throw new NumericException(key);
+    //             }
+    //         }
+    //     }
+    //     // Check if the field has a Range annotation
+    //     if (field.isAnnotationPresent(Range.class)) {
+    //         if (params.get(key) != null) {
+    //             try {
+    //                 Double.parseDouble(params.get(key)[0]);
+    //             } catch (Exception e) {
+    //                 throw new NumericException(key);
+    //             }
+    //             Range range = field.getAnnotation(Range.class);
+    //             double value = Double.parseDouble(params.get(key)[0]);
+    //             if (value < range.min() || value > range.max()) {
+    //                 throw new RangeException(key, range);
+    //             }
 
+    //         }
+    //     }
+    // }
+
+//sprint 14
+    public List<String> validateField(Map<String, String[]> params, Field field, String key) {
+        List<String> errors=new ArrayList<>();
+        // Check if the field has a Numeric annotation
+        if (field.isAnnotationPresent(Numeric.class)) {
+            if (params.get(key) != null) {
+                try {
+                    Double.parseDouble(params.get(key)[0]);
+                } catch (Exception e) {
+                    errors.add(new NumericException(key).getMessage());
+                }
+            }
+        }
+        // Check if the field has a Range annotation
+        if (field.isAnnotationPresent(Range.class)) {
+            if (params.get(key) != null) {
+                try {
+                    Range range = field.getAnnotation(Range.class);
+                    double value = Double.parseDouble(params.get(key)[0]);
+                    if (value < range.min() || value > range.max()) {
+                        errors.add(new RangeException(key, range).getMessage());
+                    }
+                } catch (NumberFormatException e) {
+                    errors.add(new NumericException(key).getMessage());
+                }
+            }
+        }
+        return errors;
+    }
     
 
 
@@ -293,7 +350,20 @@ public class Utils {
         Object o = c.getConstructor((Class[]) null).newInstance((Object[]) null);
         /// prendre les attributs
         Field[] f = c.getDeclaredFields();
-      
+        //  sprint 14
+        for(Field field:f){
+            String attributObjet = null;
+            attributObjet = field.isAnnotationPresent(FieldParam.class)
+                    ? field.getAnnotation(FieldParam.class).paramName()
+                    : field.getName();
+            key = nomObjet + "." + attributObjet;
+            if(validateField(params, field, key).size()>0){
+                errorMap.put(key, validateField(params, field, key));
+            }
+        }
+        if(!errorMap.isEmpty()){
+            throw new ValidationException(errorMap);
+        }
 
         for (Field field : f) {
             String attributObjet = null;
@@ -301,7 +371,8 @@ public class Utils {
                     ? field.getAnnotation(FieldParam.class).paramName()
                     : field.getName();
             key = nomObjet + "." + attributObjet;
-           
+            /// ATOMBOKA eto sprint 13
+           // validateField(params, field, key);
             Method setters = c.getDeclaredMethod(setCatMethodName(attributObjet), field.getType());
             if (key == null || params.get(key) == null) {
                 setters.invoke(o, this.parse(null, field.getType()));
@@ -353,7 +424,12 @@ public class Utils {
                 parameterValues[i] = new MyMultiPart(part);  // Convertit en MyMultiPart
             }
 
-           
+            //sprint 13
+            
+            else if (!parameters[i].getType().isPrimitive() && !parameters[i].getType().equals(String.class)) {
+                processObject(params, parameters[i], objectsList);
+                parameterValues[i] = objectsList.get(objectsList.size() - 1); // Récupère l'objet créé
+            } 
             //sprint7
              else {
                 String paramName = "";
@@ -457,8 +533,13 @@ public class Utils {
 
 
         }
-        catch (Exception e) {
-            throw new ServletException("Erreur lors de la récupération des paramètres : " + e.getMessage(), e);
+        catch(ValidationException ve){
+            if(method.isAnnotationPresent(ErrorUrl.class)){
+                ve.setErrorUrl(method.getAnnotation(ErrorUrl.class).url());
+                ve.setErrorMethod(method.getAnnotation(ErrorUrl.class).method());
+            }
+            ve.setParamsBeforeError(params);
+            throw ve;
         }
         
         Object controller=laclasse.getConstructor().newInstance();
@@ -522,9 +603,43 @@ public class Utils {
 
     }
 
+    //  sprint 15
+    public void verifAuthMethode(VerbMethod meth, HttpServletRequest request, String authVarName,
+            String authRoleVarName) throws ResourceNotFound {
+        if (meth.getMethode().isAnnotationPresent(Auth.class)) {
+            if (request.getSession().getAttribute(authVarName) == null) {
+                throw new ResourceNotFound("Vous n'etes pas connecte");
+            }
+            if (!meth.getMethode().getAnnotation(Auth.class).authRole().equals("")) {
+                if (request.getSession().getAttribute(authRoleVarName) == null ||
+                        !request.getSession().getAttribute(authRoleVarName)
+                                .equals(meth.getMethode().getAnnotation(Auth.class).authRole())) {
+                    throw new ResourceNotFound("Vous n'avez pas le role necessaire");
+                }
+            }
+        }
+    }
 
+    //sprint16
 
-  
+    public boolean verifAuthController(Mapping m, HttpServletRequest request, String authVarName, String authRoleVarName)
+            throws ResourceNotFound, ClassNotFoundException {
+        Class<?> controller = Class.forName(m.getClassName());
+        if (controller.isAnnotationPresent(AuthController.class)) {
+            if (request.getSession().getAttribute(authVarName) == null) {
+                throw new ResourceNotFound("Vous n'etes pas connecte");
+            }
+            if (!controller.getAnnotation(AuthController.class).authRole().equals("")) {
+                if (request.getSession().getAttribute(authRoleVarName) == null ||
+                        !request.getSession().getAttribute(authRoleVarName)
+                                .equals(controller.getAnnotation(AuthController.class).authRole())) {
+                    throw new ResourceNotFound("Vous n'avez pas le role necessaire");
+                }
+            }
+            return true;
+        }
+        return false;
+    }
 
 
 
@@ -604,7 +719,31 @@ public class Utils {
             // }
 
 
-           
+            //sprint 14
+            catch (ValidationException e) {
+                out.println(e.getErrorUrl());
+                String errorUrl = e.getErrorUrl();
+                String errorMethod = e.getErrorMethod();
+                if (errorUrl != null) {
+                    // Create a new HttpServletRequestWrapper to modify the request method
+                    HttpServletRequestWrapper wrappedRequest = new HttpServletRequestWrapper(request) {
+                        @Override
+                        public String getMethod() {
+                            return errorMethod;
+                        }
+                    };
+    
+                    wrappedRequest.setAttribute("errors", e.getErrorMap());
+                    wrappedRequest.setAttribute("params", e.getParamsBeforeError());
+                    // Dispatch the new request to errorUrl
+                    RequestDispatcher dispatcher = wrappedRequest.getRequestDispatcher(errorUrl);
+                    dispatcher.forward(wrappedRequest, response);
+                } else {
+                    // Print the errors directly
+                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    response.getWriter().write(e.getMessage());
+                }
+            } 
 
            //sprint 11
             catch (ResourceNotFound e) {

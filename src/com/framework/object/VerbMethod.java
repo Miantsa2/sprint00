@@ -1,11 +1,11 @@
-package object;
+package com.framework.object;
 
 import java.lang.reflect.Method;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
 
-import utils.Mapping;
+import java.util.Objects;
+
+
+
 
 public class VerbMethod {
     String verb;
